@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e6dfcd">
+<meta name="color-scheme" content="dark">
+<title>ДОРОГА · Брест — Берлин · 1418 дней</title>
+<meta name="description" content="Восемь станций от Бреста до Берлина. 1418 дней. Сначала на восток, потом на запад.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+/* ============================================================
+   ДОРОГА — Брест → Берлин · 1418 дней
+   Один файл. Внешних ресурсов нет: работает без интернета.
+   ============================================================ */
+
+:root{
+  --ink:        #e6dfcd;
+  --ink-2:      #dbd2bd;
+  --paper:      #1f1c17;
+  --paper-soft: #3b362c;
+  --muted:      #6a6252;
+  --brass:      #6f5a38;
+  --brass-dim:  #7d6d4e;
+  --red:        #9a2f25;
+  --line:       rgba(40,34,24,.22);
+  --serif: "Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "American Typewriter","Courier New",Courier,monospace;
+  --pad: 22px;
+  --topbar: 58px;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{
+  background:var(--ink);
+  scroll-behavior:smooth;
+  -webkit-text-size-adjust:100%;
+}
+@media (prefers-reduced-motion: no-preference){
+  html{scroll-snap-type:y proximity;}
+}
+body{
+  margin:0;
+  min-height:100%;
+  background:
+    radial-gradient(120% 80% at 18% 0%, #efe9d8 0%, transparent 55%),
+    radial-gradient(110% 70% at 100% 100%, #ddd3bc 0%, transparent 60%),
+    var(--ink);
+  color:var(--paper);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+img,svg{display:block;max-width:100%}
+button{font:inherit;color:inherit}
+::selection{background:var(--brass);color:#f4eee0}
+
+/* фактура: зерно и виньетка */
+.grain,.vignette{position:fixed;inset:0;pointer-events:none;z-index:60}
+.grain{
+  opacity:.2;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.vignette{
+  background:radial-gradient(120% 90% at 50% 45%, transparent 45%, rgba(96,68,28,.3) 100%);
+  z-index:59;
+}
+
+/* ---------- верхняя панель ---------- */
+.topbar{
+  position:fixed;inset:0 0 auto 0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:calc(env(safe-area-inset-top) + 13px) var(--pad) 12px;
+  background:linear-gradient(to bottom, rgba(230,223,205,.95), rgba(230,223,205,.8));
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+}
+.topbar::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:var(--line);
+}
+.meta{margin-left:auto;text-align:right;line-height:1.15}
+.meta__year{
+  display:block;font-family:var(--serif);font-size:19px;letter-spacing:.03em;
+  color:var(--paper);
+}
+.meta__day{
+  display:block;margin-top:3px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.10em;
+  color:var(--muted);text-transform:uppercase;
+}
+.meta__day b{color:var(--brass);font-weight:400;font-variant-numeric:tabular-nums}
+.rail{position:absolute;left:0;right:0;bottom:0;height:2px;overflow:hidden}
+.rail__fill{
+  height:100%;width:100%;transform:scaleX(0);transform-origin:0 50%;
+  background:linear-gradient(to right, var(--brass-dim), var(--brass));
+  transition:transform .18s linear;
+}
+.rail__ticks{
+  position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;
+  padding:0 var(--pad);
+}
+.rail__ticks span{width:2px;height:2px;border-radius:50%;background:rgba(40,34,24,.28)}
+.rail__ticks span.on{background:var(--brass)}
+
+/* ---------- общий каркас экранов ---------- */
+.screen{
+  position:relative;
+  min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:calc(var(--topbar) + env(safe-area-inset-top) + 30px) var(--pad)
+          calc(env(safe-area-inset-bottom) + 92px);
+  overflow:hidden;
+  scroll-snap-align:start;
+}
+.screen > *{position:relative;z-index:2}
+.date{
+  display:inline-block;
+  font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--brass);
+}
+.lead{
+  margin:0 0 0;
+  max-width:32em;
+  font-size:17px;line-height:1.66;
+  color:var(--paper-soft);
+  text-wrap:pretty;
+}
+
+/* ---------- интро ---------- */
+.intro{justify-content:space-between;padding-bottom:calc(env(safe-area-inset-bottom) + 92px)}
+.intro__top{padding-top:4vh}
+.intro__kicker{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted);
+}
+.intro__kicker b{color:var(--brass);font-weight:400}
+.intro__kicker s{width:26px;height:1px;background:var(--line);display:inline-block}
+.intro h1{
+  margin:.24em 0 .12em;
+  font-family:var(--serif);font-weight:400;
+  font-size:clamp(3rem, 17.5vw, 8.6rem);
+  line-height:.92;letter-spacing:.005em;
+  color:var(--paper);
+}
+.intro h1 span{
+  display:inline-block;opacity:0;transform:translateY(.45em) rotate(1.5deg);
+  animation:rise 1.05s cubic-bezier(.19,.75,.22,1) forwards;
+}
+@keyframes rise{to{opacity:1;transform:none}}
+.intro__sub{
+  max-width:22em;margin:0;color:var(--paper-soft);
+  font-size:15.5px;line-height:1.6;
+}
+.intro__route{
+  display:flex;align-items:center;gap:5px;margin:26px 0 0;
+  opacity:0;animation:fade 1.4s .7s ease forwards;
+}
+.intro__route span{
+  width:4px;height:4px;border-radius:50%;background:var(--brass-dim);flex:none;
+  transform:scale(.2);animation:dot .5s cubic-bezier(.2,.9,.2,1) forwards;
+}
+.intro__route span:nth-child(1){animation-delay:.85s}
+.intro__route span:nth-child(2){animation-delay:.95s}
+.intro__route span:nth-child(3){animation-delay:1.05s}
+.intro__route span:nth-child(4){animation-delay:1.15s}
+.intro__route span:nth-child(5){animation-delay:1.25s}
+.intro__route span:nth-child(6){animation-delay:1.35s}
+.intro__route span:nth-child(7){animation-delay:1.45s}
+.intro__route span:nth-child(8){animation-delay:1.55s}
+.intro__route i{flex:1;height:1px;background:var(--line);position:relative;overflow:hidden}
+.intro__route i::after{
+  content:"";position:absolute;inset:0;background:var(--brass-dim);
+  transform:scaleX(0);transform-origin:0 50%;animation:grow 1.1s 1s ease forwards;
+}
+@keyframes grow{to{transform:scaleX(1)}}
+@keyframes dot{to{transform:scale(1)}}
+@keyframes fade{to{opacity:1}}
+.intro__bottom{display:flex;flex-direction:column;gap:14px}
+.ticket{
+  border:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(40,34,24,.045), rgba(40,34,24,.015));
+  padding:14px 16px;
+  display:grid;grid-template-columns:1fr auto;gap:6px 16px;
+  opacity:0;animation:fade 1s .9s ease forwards;
+}
+.ticket__row{display:contents}
+.ticket dt{
+  align-self:center;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted);
+}
+.ticket dd{
+  margin:0;text-align:right;
+  font-family:var(--serif);font-size:15px;letter-spacing:.01em;color:var(--paper);
+  white-space:nowrap;
+}
+.ticket dd em{font-style:normal;color:var(--brass)}
+.ticket hr{
+  grid-column:1 / -1;border:0;border-top:1px dashed rgba(111,90,56,.16);margin:4px 0;
+}
+.btn{
+  -webkit-appearance:none;appearance:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  min-height:52px;padding:0 22px;
+  border:1px solid var(--brass);background:rgba(111,90,56,.06);
+  color:var(--paper);text-decoration:none;cursor:pointer;
+  font-family:var(--sans);font-size:11px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  transition:background .25s ease, color .25s ease, border-color .25s ease, transform .25s ease;
+}
+.btn:hover{background:var(--brass);color:#f4eee0}
+.btn:active{transform:translateY(1px)}
+.btn--ghost{border-color:rgba(111,90,56,.32);background:transparent;color:var(--paper-soft)}
+.btn--ghost:hover{border-color:var(--brass);background:rgba(111,90,56,.08);color:var(--paper)}
+.btn--wide{width:100%}
+.btn i{font-style:normal;font-size:13px;letter-spacing:0}
+.intro__hint{
+  display:flex;align-items:center;gap:9px;justify-content:center;
+  margin-top:8px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(40,34,24,.62);
+}
+.intro__hint s{
+  display:block;width:1px;height:22px;background:linear-gradient(to bottom,var(--brass),transparent);
+  animation:hint 2.2s ease-in-out infinite;
+}
+@keyframes hint{0%,100%{transform:scaleY(.35);transform-origin:top;opacity:.5}50%{transform:scaleY(1);opacity:1}}
+
+/* орнамент: петля маршрута на старте */.intro__ornament{
+  flex:1 1 auto;display:flex;align-items:center;justify-content:center;
+  min-height:110px;padding:8px 0 4px;opacity:0;
+  animation:fade 1.6s 1.1s ease forwards;
+}
+.intro__ornament svg{width:min(100%,400px);height:auto;max-height:min(30vh,260px)}
+.orn-line{fill:none;stroke:var(--brass-dim);stroke-width:1.15;vector-effect:non-scaling-stroke;opacity:.8}
+.orn-line--west{stroke:var(--brass);opacity:.95}
+.orn-head{fill:none;stroke:var(--brass);stroke-width:1.15;vector-effect:non-scaling-stroke;opacity:.95}
+.orn-dot{fill:var(--brass)}
+.orn-lbl{fill:rgba(40,34,24,.5);font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase}
+.orn-lbl--end{fill:var(--brass-dim)}
+
+/* невысокие экраны: убираем орнамент, чтобы билет влез без прокрутки */
+@media (max-height: 760px){
+  .intro{padding-top:calc(var(--topbar) + env(safe-area-inset-top) + 12px);padding-bottom:calc(env(safe-area-inset-bottom) + 82px)}
+  .intro__ornament{display:none}
+  .intro h1{font-size:clamp(2.5rem, 14.5vw, 4.6rem)}
+  .intro__sub{font-size:14.5px;line-height:1.5}
+  .intro__route{margin-top:16px}
+}
+
+/* ---------- станции ---------- */
+.station{
+  justify-content:flex-end;
+  padding-top:calc(var(--topbar) + env(safe-area-inset-top) + 18px);
+}
+.station__inner{width:100%;max-width:600px;margin:0 auto}
+.station__meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.station__meta .date{color:var(--brass)}
+.station__meta .coord{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:rgba(106,98,82,.8);
+}
+.city{
+  margin:.16em 0 .34em;
+  font-family:var(--serif);font-weight:400;
+  font-size:clamp(2.6rem, 13.8vw, 5.2rem);
+  line-height:.9;letter-spacing:-.015em;
+  color:var(--paper);
+}
+.city small{
+  display:block;margin-bottom:.5em;
+  font-family:var(--mono);font-size:10.5px;font-weight:400;letter-spacing:.14em;
+  color:var(--muted);text-transform:uppercase;
+}
+.station .lead{font-size:16.5px;color:var(--paper-soft)}
+.note{
+  margin-top:22px;padding:15px 16px 15px 18px;
+  border-left:2px solid var(--brass-dim);
+  background:linear-gradient(90deg, rgba(111,90,56,.075), rgba(111,90,56,.015) 70%, transparent);
+}
+.note__label{
+  display:block;margin-bottom:7px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brass-dim);
+}
+.note p{
+  margin:0;font-family:var(--serif);font-size:15.5px;line-height:1.52;
+  font-style:italic;color:#2b261d;text-wrap:pretty;
+}
+.fact{display:flex;align-items:center;gap:14px;margin-top:24px}
+.fact__num{
+  font-family:var(--serif);font-size:clamp(2rem, 9vw, 2.9rem);line-height:1;
+  color:var(--brass);letter-spacing:-.01em;white-space:nowrap;
+}
+.fact__text{
+  max-width:15em;
+  font-family:var(--mono);font-size:11px;line-height:1.55;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);
+}
+.station__ghost{
+  position:absolute;z-index:1;right:-.08em;top:calc(var(--topbar) + env(safe-area-inset-top) - .1em);
+  font-family:var(--serif);font-size:clamp(9rem, 44vw, 20rem);line-height:.8;
+  color:transparent;-webkit-text-stroke:1px rgba(111,90,56,.11);
+  pointer-events:none;user-select:none;
+}
+.station__no{
+  position:absolute;z-index:3;left:var(--pad);top:calc(var(--topbar) + env(safe-area-inset-top) + 16px);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:rgba(106,98,82,.65);
+}
+/* ---------- сцены (SVG, без фотографий) ---------- */
+.scene{
+  position:absolute;inset:0 0 auto 0;height:64%;z-index:0;
+  pointer-events:none;opacity:.9;
+  -webkit-mask-image:linear-gradient(to bottom,#000 26%,transparent 74%);
+  mask-image:linear-gradient(to bottom,#000 26%,transparent 74%);
+}
+.scene__svg{width:100%;height:100%}
+.scene .ln{
+  fill:none;stroke:var(--brass);stroke-width:1;vector-effect:non-scaling-stroke;
+  stroke-dasharray:1;stroke-dashoffset:1;opacity:.5;
+}
+.scene .ln--soft{stroke:rgba(40,34,24,.55);opacity:.22;stroke-width:.8}
+.scene .fill{fill:rgba(111,90,56,.05);stroke:none;opacity:0}
+.scene .dot{fill:var(--brass);stroke:none;opacity:0}
+.scene .red{fill:var(--red);stroke:none;opacity:0}
+.scene .arrow{stroke:var(--brass);opacity:.7}
+.scene .lbl{fill:var(--muted);font-family:var(--mono);font-size:15px;letter-spacing:.2em;text-transform:uppercase;opacity:0}
+.is-active .scene .lbl{animation:fade .8s ease 1.4s forwards}
+.is-active .scene .ln{animation:draw 1.9s cubic-bezier(.25,.7,.2,1) forwards}
+.is-active .scene .fill{animation:fade .9s ease forwards;animation-delay:.3s}
+.is-active .scene .dot{animation:fade .6s ease forwards;animation-delay:1.1s}
+.is-active .scene .red{animation:fade .8s ease forwards;animation-delay:1.3s}
+.scene .ln:nth-child(1){animation-delay:.05s}
+.scene .ln:nth-child(2){animation-delay:.12s}
+.scene .ln:nth-child(3){animation-delay:.19s}
+.scene .ln:nth-child(4){animation-delay:.26s}
+.scene .ln:nth-child(5){animation-delay:.33s}
+.scene .ln:nth-child(6){animation-delay:.4s}
+.scene .ln:nth-child(7){animation-delay:.47s}
+.scene .ln:nth-child(8){animation-delay:.54s}
+.scene .ln:nth-child(9){animation-delay:.61s}
+.scene .ln:nth-child(n+10){animation-delay:.68s}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fade{to{opacity:1}}
+
+/* появление текста станции */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .8s ease, transform .9s cubic-bezier(.19,.75,.22,1)}
+.is-active .reveal{opacity:1;transform:none}
+.is-active .reveal:nth-child(1){transition-delay:.05s}
+.is-active .reveal:nth-child(2){transition-delay:.12s}
+.is-active .reveal:nth-child(3){transition-delay:.2s}
+.is-active .reveal:nth-child(4){transition-delay:.3s}
+.is-active .reveal:nth-child(5){transition-delay:.4s}
+.is-active .reveal:nth-child(6){transition-delay:.5s}
+
+/* ---------- поворот дороги (Курск) ---------- */
+.station--turn .fact__num{color:var(--red)}
+.station--turn .note{border-left-color:var(--red)}
+.station--turn .note__label{color:var(--red)}
+.station--turn .station__ghost{-webkit-text-stroke-color:rgba(161,50,43,.22)}
+body.is-turned .rail__fill{background:linear-gradient(to right, var(--brass-dim), var(--red))}
+.turn-mark{
+  display:inline-flex;align-items:center;gap:8px;margin-top:20px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);
+}
+.turn-mark s{display:block;width:34px;height:1px;background:currentColor}
+
+/* ---------- финал ---------- */
+.finale{justify-content:flex-start;padding-bottom:calc(env(safe-area-inset-bottom) + 40px)}
+.finale__head{padding-top:2vh}
+.finale__title{
+  margin:.2em 0 .24em;font-family:var(--serif);font-weight:400;
+  font-size:clamp(2.6rem, 13vw, 5rem);line-height:.94;letter-spacing:-.01em;
+}
+.finale__sub{margin:0;color:var(--paper-soft);font-size:15px;max-width:24em}
+.letter{
+  position:relative;margin:30px auto 0;width:100%;max-width:560px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 27px, rgba(35,31,24,.055) 27px 28px),
+    radial-gradient(120% 90% at 30% 0%, #f6edda, #e9dcc4 70%, #e2d3b8);
+  color:#241f17;
+  padding:30px 24px 26px;
+  box-shadow:0 24px 60px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.5) inset;
+  transform:rotate(-.35deg);
+}
+.letter::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(80% 60% at 80% 100%, rgba(120,90,50,.12), transparent 70%);
+  pointer-events:none;
+}
+.letter__body p{
+  margin:0 0 13px;font-family:var(--serif);font-size:16.5px;line-height:1.75;
+  color:#2a241b;
+}
+.letter__body p:last-child{margin-bottom:0}
+.letter__sign{
+  margin-top:20px;padding-right:72px;text-align:right;
+  font-family:var(--serif);font-style:italic;font-size:17px;color:#3b3226;
+}
+.letter__seal{
+  position:absolute;right:-8px;bottom:-10px;width:54px;height:54px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #b84036, #7d221c 70%);
+  box-shadow:0 8px 18px rgba(0,0,0,.4), inset 0 0 0 2px rgba(255,255,255,.12);
+  display:grid;place-items:center;
+  font-family:var(--serif);font-size:20px;color:rgba(255,235,220,.8);
+  transform:rotate(-10deg);
+}
+.letter__seal::after{
+  content:"";position:absolute;inset:5px;border-radius:50%;
+  border:1px solid rgba(255,235,220,.35);
+}
+
+/* маршрутный лист */
+.cert{
+  margin:34px auto 0;width:100%;max-width:560px;
+  border:1px solid rgba(111,90,56,.5);
+  background:linear-gradient(180deg, rgba(40,34,24,.05), rgba(40,34,24,.015));
+  padding:3px;
+}
+.cert__frame{
+  position:relative;border:1px solid rgba(111,90,56,.22);padding:24px 20px 26px;
+  text-align:center;overflow:hidden;
+}
+.cert__top{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.19em;text-transform:uppercase;
+  color:var(--brass-dim);
+}
+.cert h3{
+  margin:.5em 0 .18em;font-family:var(--serif);font-weight:400;
+  font-size:clamp(1.9rem, 9vw, 2.6rem);letter-spacing:.08em;color:var(--paper);
+}
+.cert__sub{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+}
+.cert__rows{margin:20px 0 0;display:grid;gap:9px;text-align:left}
+.cert__row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;border-bottom:1px dotted rgba(111,90,56,.22);padding-bottom:7px}
+.cert__row span{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.cert__row b{font-family:var(--serif);font-weight:400;font-size:15px;color:var(--paper);text-align:right}
+.cert__phrase{
+  margin:18px 0 0;padding-right:72px;
+  font-family:var(--serif);font-style:italic;font-size:13.5px;line-height:1.5;
+  color:var(--paper-soft);text-align:left;
+}
+.cert__stamp{
+  position:absolute;right:14px;bottom:12px;width:62px;height:62px;border-radius:50%;
+  border:1.5px solid rgba(161,50,43,.75);color:rgba(161,50,43,.85);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  transform:rotate(-12deg);opacity:.85;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;
+  box-shadow:inset 0 0 0 3px rgba(161,50,43,.12);
+}
+.cert__stamp em{
+  font-style:normal;font-size:10.5px;letter-spacing:.04em;opacity:.8;
+}
+.finale__actions{display:flex;flex-wrap:wrap;gap:10px;margin:26px auto 0;width:100%;max-width:560px}
+.finale__actions .btn{flex:1 1 180px}
+.foot{
+  margin:30px auto 0;width:100%;max-width:560px;
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:rgba(106,98,82,.7);
+}
+
+
+
+@media (min-width: 900px){
+  :root{--pad:clamp(40px, 6vw, 96px)}
+  .intro{justify-content:center;padding-bottom:120px}
+  .intro__ornament{display:none}
+  .intro__top{padding-top:0}
+  .intro__bottom{
+    position:absolute;left:var(--pad);right:var(--pad);
+    bottom:calc(env(safe-area-inset-bottom) + 96px);
+    flex-direction:row;align-items:flex-end;justify-content:space-between;gap:32px;
+  }
+  .intro__cta{width:280px;min-width:0;order:1}
+  .ticket{min-width:380px;order:2}
+  .intro__hint{display:none}
+  .station{padding-top:calc(var(--topbar) + 40px);justify-content:center}
+  .station__inner{
+    max-width:1240px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,540px);
+    gap:clamp(30px, 5vw, 90px);align-items:center;
+  }
+  .station__text{grid-column:2}
+  .scene{
+    left:0;top:0;width:52%;height:100%;
+    -webkit-mask-image:linear-gradient(to right,#000 78%,transparent 100%);
+    mask-image:linear-gradient(to right,#000 78%,transparent 100%);
+  }
+  .city{font-size:clamp(4.4rem, 7.6vw, 7.4rem)}
+  .station__ghost{top:calc(var(--topbar) + 30px);left:18%;right:auto;font-size:clamp(12rem, 24vw, 26rem)}
+  .finale{padding-top:calc(var(--topbar) + 60px)}
+  .finale__head,.letter,.cert,.finale__actions,.foot{max-width:760px;margin-left:auto;margin-right:auto}
+  .finale__head{width:100%}
+  .finale__title{font-size:clamp(3.4rem, 5.4vw, 4.6rem)}
+  .letter{max-width:760px;padding:44px 52px 40px}
+  .letter__body p{font-size:18px;line-height:1.8;max-width:62ch}
+  .cert__frame{padding:30px 34px 32px}
+  .station__ghost{-webkit-text-stroke-width:1.5px}
+}
+
+/* ---------- полевая запись: открытие изображения ---------- */
+.note[data-img]{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .3s ease,border-color .3s ease}
+.note[data-img]:hover,.note[data-img]:focus-visible{border-left-color:var(--brass);background:linear-gradient(90deg, rgba(111,90,56,.12), rgba(111,90,56,.03) 70%, transparent)}
+.note__open{
+  display:inline-block;margin-top:11px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass);
+}
+.note__open i{font-style:normal;display:inline-block;transition:transform .3s ease}
+.note[data-img]:hover .note__open i{transform:translate(2px,-2px)}
+html.lb-open{overflow:hidden}
+.lb{
+  position:fixed;inset:0;z-index:100;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  padding:calc(env(safe-area-inset-top) + 64px) 18px calc(env(safe-area-inset-bottom) + 26px);
+  background:rgba(8,7,5,.95);
+  opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s;
+}
+.lb.is-open{opacity:1;visibility:visible}
+.lb__stage{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+.lb__img{
+  max-width:100%;max-height:100%;object-fit:contain;
+  border:1px solid var(--line);box-shadow:0 20px 60px rgba(0,0,0,.6);
+  transform:scale(.97);transition:transform .45s cubic-bezier(.19,.75,.22,1);
+}
+.lb.is-open .lb__img{transform:none}
+.lb__ph{
+  display:none;width:min(100%,420px);aspect-ratio:3/4;max-height:100%;
+  flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px;
+  border:1px dashed var(--brass-dim);
+  font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+}
+.lb__ph b{font-weight:400;color:var(--brass);letter-spacing:.04em;text-transform:none}
+.lb.is-empty .lb__img{display:none}
+.lb.is-empty .lb__ph{display:flex}
+.lb__cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);text-align:center;
+}
+.lb__close{
+  position:absolute;right:max(14px,env(safe-area-inset-right));top:calc(env(safe-area-inset-top) + 12px);
+  width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:transparent;color:var(--paper);
+  font-size:20px;line-height:1;cursor:pointer;
+}
+.lb__close:hover{border-color:var(--brass);color:var(--brass)}
+
+/* ---------- доступность ---------- */
+:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto;scroll-snap-type:none}
+  *,*::before,*::after{animation-duration:.01ms !important;animation-delay:0ms !important;transition-duration:.01ms !important}
+  .reveal{opacity:1;transform:none}
+  .scene .ln{stroke-dashoffset:0;opacity:.5}
+}
+
+/* ---------- архивная бумага ---------- */
+::selection{background:var(--brass);color:#f4eee0}
+.station__ghost{display:none}
+.ticket{background:none;border-width:1px 0;padding:12px 2px}
+.note{
+  border:1px solid rgba(40,34,24,.2);background:#f6f0e1;padding:16px 18px 15px;
+  rotate:-.5deg;box-shadow:0 1px 0 rgba(255,255,255,.65) inset,0 12px 22px -14px rgba(70,50,15,.5);
+}
+.note__label{color:var(--red)}
+.note p{color:#2b261d}
+.note[data-img]:hover,.note[data-img]:focus-visible{border-color:rgba(111,90,56,.55);background:#faf5e9}
+.fact__num{color:var(--red)}
+.letter{box-shadow:0 18px 40px -18px rgba(70,50,15,.55),0 1px 0 rgba(255,255,255,.7) inset;border:1px solid rgba(40,34,24,.14)}
+.scene .ln{stroke:var(--paper);opacity:.6}
+.scene .ln--soft{opacity:.26}
+.scene .arrow{stroke:var(--red);opacity:.9;stroke-width:1.4}
+.scene .fill{fill:rgba(70,50,20,.07)}
+.scene .dot{fill:var(--red)}
+.scene .lbl{fill:var(--muted)}
+.orn-line{stroke:var(--brass-dim)}.orn-line--west,.orn-head{stroke:var(--red)}
+.orn-dot{fill:var(--red)}.orn-lbl{fill:var(--muted)}
+.lb__close{color:#efe5d2;border-color:rgba(239,229,210,.3)}
+.lb__close:hover{color:#fff;border-color:#efe5d2}
+.lb__img{border-color:rgba(239,229,210,.2)}
+.lb__cap,.lb__ph{color:#a39a88}
+.lb__ph{border-color:#8a7a5a}.lb__ph b{color:#d8c79c}
+/* ---------- ритм станций и вкладыши ---------- */
+.note{position:relative}
+.note::before{
+  content:"";position:absolute;left:50%;top:-10px;width:68px;height:19px;margin-left:-34px;rotate:-2.5deg;
+  background:rgba(190,168,118,.55);box-shadow:0 1px 2px rgba(60,40,10,.18);pointer-events:none;
+}
+/* Курск — поворот: единственный тёмный экран */
+#s4{
+  --ink:#14120e;--paper:#efe5d2;--paper-soft:#ded4c1;--muted:#a39a88;
+  --brass:#c9a25e;--brass-dim:#9a7f4b;--line:rgba(239,229,210,.2);
+  background:#14120e;color:var(--paper);
+}
+#s4 .scene .fill{fill:rgba(239,229,210,.06)}
+#s4 .scene .arrow{stroke:#d6685b}
+#s4 .scene .dot{fill:#d6685b}
+#s4 .fact__num,#s4 .turn-mark{color:#d6685b}
+#s4 .station__no{color:rgba(163,154,136,.8)}
+/* Победа: заголовок красным */
+#s8 .city{color:var(--red)}
+@media (max-width:899px){#s3 .scene,#s8 .scene{height:74%}}
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="meta">
+    <span class="meta__year" id="yearEl">1941</span>
+    <span class="meta__day">день <b id="dayNum">1</b> / 1418</span>
+  </div>
+  <div class="rail" aria-hidden="true">
+    <div class="rail__fill" id="railFill"></div>
+    <div class="rail__ticks" id="railTicks"></div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= СТАРТ ================= -->
+  <section class="screen intro" id="start">
+    <div class="intro__top">
+      <div class="intro__kicker">
+        <b>Брест — Берлин</b><s></s><span>22.06.1941 — 09.05.1945</span>
+      </div>
+      <h1 aria-label="Дорога"><span>Д</span><span>О</span><span>Р</span><span>О</span><span>Г</span><span>А</span></h1>
+      <p class="intro__sub">Восемь станций. 1418 дней.<br>Сначала на восток — потом на запад.</p>
+      <div class="intro__route" aria-hidden="true">
+        <span></span><i></i><span></span><i></i><span></span><i></i><span></span><i></i><span></span><i></i><span></span><i></i><span></span>
+      </div>
+    </div>
+
+    <div class="intro__ornament" aria-hidden="true">
+      <svg viewBox="0 0 360 250" role="presentation">
+        <path class="orn-line" d="M18 150 C 80 66, 200 48, 336 128"/>
+        <path class="orn-line orn-line--west" d="M336 128 C 292 214, 150 232, 26 196"/>
+        <path class="orn-head" d="M26 196 L52 186 M26 196 L50 210"/>
+        <circle class="orn-dot" cx="18" cy="150" r="3.2"/>
+        <circle class="orn-dot" cx="336" cy="128" r="4.4"/>
+        <text class="orn-lbl" x="96" y="58">на восток</text>
+        <text class="orn-lbl" x="150" y="206">на запад</text>
+        <text class="orn-lbl orn-lbl--end" x="292" y="108">поворот</text>
+      </svg>
+    </div>
+
+    <div class="intro__bottom">
+      <div class="intro__cta">
+        <button class="btn btn--wide" id="startBtn" type="button">Начать путь <i>↓</i></button>
+      </div>
+      <dl class="ticket">
+        <div class="ticket__row"><dt>Маршрут</dt><dd>Брест — Берлин</dd></div>
+        <hr>
+        <div class="ticket__row"><dt>Пройдено</dt><dd><em>0</em> / 1418 дней</dd></div>
+        <div class="ticket__row"><dt>Станций</dt><dd>8</dd></div>
+      </dl>
+      <div class="intro__hint"><s></s>листайте вниз</div>
+    </div>
+  </section>
+  <!-- ================= 01 · БРЕСТ ================= -->
+  <section class="screen station" id="s1" data-day="1" data-year="1941" data-name="Брест" data-date="22 июня 1941">
+    <div class="station__ghost" aria-hidden="true">1</div>
+    <div class="station__no">01 / 08</div>
+    <div class="scene" aria-hidden="true">
+      <svg class="scene__svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
+        <circle class="fill" cx="300" cy="330" r="128"/>
+        <circle class="ln ln--soft" pathLength="1" cx="300" cy="330" r="128"/>
+        <circle class="ln" pathLength="1" cx="300" cy="330" r="96"/>
+        <circle class="ln" pathLength="1" cx="300" cy="330" r="70"/>
+        <circle class="ln" pathLength="1" cx="300" cy="330" r="11"/>
+        <polygon class="ln" pathLength="1" points="70,285 150,270 150,390 70,375"/>
+        <polygon class="ln" pathLength="1" points="410,150 520,140 530,225 425,245"/>
+        <polygon class="ln" pathLength="1" points="425,415 530,435 520,520 410,505"/>
+        <path class="ln ln--soft" pathLength="1" d="M172 330 L150 330 M392 250 L424 238 M392 410 L424 422"/>
+        <path class="ln arrow" pathLength="1" d="M20 330 L204 330"/>
+        <path class="ln arrow" pathLength="1" d="M204 330 L189.6 323 M204 330 L189.6 337"/>
+        <text class="lbl" x="22" y="308" text-anchor="start">3:15</text>
+        <text class="lbl" x="300" y="490" text-anchor="middle">Цитадель</text>
+        <circle class="dot" cx="300" cy="330" r="3.5"/>
+      </svg>
+    </div>
+    <div class="station__inner">
+      <div class="station__text">
+        <div class="station__meta reveal"><span class="date">22 июня 1941</span><span class="coord">52.08° N · 23.65° E</span></div>
+        <h2 class="city reveal"><small>станция 01</small>Брест</h2>
+        <p class="lead reveal">В 3:15 утра здесь началась война. Гарнизон крепости оказался в кольце в первые часы — без связи, без воды, без приказа отходить. Сопротивление не прекращалось почти месяц.</p>
+        <div class="note reveal" data-img="img/s1.jpg">
+          <span class="note__label">полевая запись</span>
+          <p>На стене казармы нашли надпись: «Я умираю, но не сдаюсь. Прощай, Родина. 20/VII-41».</p>
+          <span class="note__open">открыть запись <i>↗</i></span>
+        </div>
+        <div class="fact reveal">
+          <span class="fact__num">20.VII</span>
+          <span class="fact__text">дата последней известной надписи на стене крепости</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 02 · МОСКВА ================= -->
+  <section class="screen station" id="s2" data-day="101" data-year="1941" data-name="Москва" data-date="30 сентября 1941">
+    <div class="station__ghost" aria-hidden="true">101</div>
+    <div class="station__no">02 / 08</div>
+    <div class="scene" aria-hidden="true">
+      <svg class="scene__svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
+        <path class="fill" d="M450 330 L404.7 499 L390.1 494.4 L376 488.6 L362.5 481.6 L349.6 473.4 L337.5 464.1 L326.3 453.7 L315.9 442.5 L306.6 430.4 L298.4 417.5 L291.4 404 L285.6 389.9 L281 375.3 L277.7 360.4 L275.7 345.3 L275 330 L275.7 314.7 L277.7 299.6 L281 284.7 L285.6 270.1 L291.4 256 L298.4 242.5 L306.6 229.6 L315.9 217.5 L326.3 206.3 L337.5 195.9 L349.6 186.6 L362.5 178.4 L376 171.4 L390.1 165.6 L404.7 161 Z"/>
+        <path class="ln" pathLength="1" d="M404.7 499 L390.1 494.4 L376 488.6 L362.5 481.6 L349.6 473.4 L337.5 464.1 L326.3 453.7 L315.9 442.5 L306.6 430.4 L298.4 417.5 L291.4 404 L285.6 389.9 L281 375.3 L277.7 360.4 L275.7 345.3 L275 330 L275.7 314.7 L277.7 299.6 L281 284.7 L285.6 270.1 L291.4 256 L298.4 242.5 L306.6 229.6 L315.9 217.5 L326.3 206.3 L337.5 195.9 L349.6 186.6 L362.5 178.4 L376 171.4 L390.1 165.6 L404.7 161"/>
+        <circle class="ln" pathLength="1" cx="450" cy="330" r="36"/>
+        <circle class="ln ln--soft" pathLength="1" cx="450" cy="330" r="80"/>
+        <path class="ln ln--soft" pathLength="1" d="M420.5 350.6 L306.6 430.4 M414 330 L275 330 M420.5 309.4 L306.6 229.6"/>
+        <path class="ln ln--soft" pathLength="1" d="M300 470 C370 420, 420 400, 450 350 S 540 300, 600 330"/>
+        <path class="ln arrow" pathLength="1" d="M228.8 484.9 L295.2 438.4"/>
+        <path class="ln arrow" pathLength="1" d="M295.2 438.4 L281.4 440.6 M295.2 438.4 L288.4 450.7"/>
+        <path class="ln" pathLength="1" d="M314.5 446.8 L293.9 417.4"/>
+        <path class="ln arrow" pathLength="1" d="M180 330 L261 330"/>
+        <path class="ln arrow" pathLength="1" d="M261 330 L248.4 323.9 M261 330 L248.4 336.1"/>
+        <path class="ln" pathLength="1" d="M272 348 L272 312"/>
+        <path class="ln arrow" pathLength="1" d="M228.8 175.1 L295.2 221.6"/>
+        <path class="ln arrow" pathLength="1" d="M295.2 221.6 L288.4 209.3 M295.2 221.6 L281.4 219.4"/>
+        <path class="ln" pathLength="1" d="M293.9 242.6 L314.5 213.2"/>
+        <text class="lbl" x="450" y="393" text-anchor="middle">Москва</text>
+        <text class="lbl" x="300" y="545" text-anchor="middle">Не дошли</text>
+        <circle class="dot" cx="450" cy="330" r="3.5"/>
+      </svg>
+    </div>
+    <div class="station__inner">
+      <div class="station__text">
+        <div class="station__meta reveal"><span class="date">30 сентября 1941</span><span class="coord">55.75° N · 37.61° E</span></div>
+        <h2 class="city reveal"><small>станция 02</small>Москва</h2>
+        <p class="lead reveal">Битва за Москву длилась 203 дня. В октябре фронт подошёл так близко, что в городе ввели осадное положение, а часть учреждений и заводов вывезли из столицы.</p>
+        <div class="note reveal" data-img="img/s2.jpg">
+          <span class="note__label">полевая запись</span>
+          <p>7 ноября на Красной площади прошёл парад. Полки уходили с него прямо на передовую — она была в нескольких десятках километров.</p>
+          <span class="note__open">открыть запись <i>↗</i></span>
+        </div>
+        <div class="fact reveal">
+          <span class="fact__num">203</span>
+          <span class="fact__text">дня длилась битва за Москву</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 03 · СТАЛИНГРАД ================= -->
+  <section class="screen station" id="s3" data-day="391" data-year="1942" data-name="Сталинград" data-date="17 июля 1942">
+    <div class="station__ghost" aria-hidden="true">391</div>
+    <div class="station__no">03 / 08</div>
+    <div class="scene" aria-hidden="true">
+      <svg class="scene__svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
+        <polygon class="fill" points="390,100 383,200 387,327 372,460 350,600 245,590 232,450 245,300 238,170 255,110"/>
+        <path class="ln" pathLength="1" d="M390 100 C370 240, 410 400, 350 600"/>
+        <path class="ln ln--soft" pathLength="1" d="M440 100 C420 240, 460 400, 400 600"/>
+        <path class="ln ln--soft" pathLength="1" d="M242 190 L384 200 M238 270 L386 280 M236 350 L384 355 M240 430 L375 440 M246 510 L362 520"/>
+        <ellipse class="ln" pathLength="1" cx="330" cy="330" rx="34" ry="56"/>
+        <ellipse class="ln" pathLength="1" cx="330" cy="330" rx="17" ry="30"/>
+        <path class="ln arrow" pathLength="1" d="M30 200 L224 200"/>
+        <path class="ln arrow" pathLength="1" d="M224 200 L209.6 193 M224 200 L209.6 207"/>
+        <path class="ln arrow" pathLength="1" d="M30 330 L224 330"/>
+        <path class="ln arrow" pathLength="1" d="M224 330 L209.6 323 M224 330 L209.6 337"/>
+        <path class="ln arrow" pathLength="1" d="M30 460 L224 460"/>
+        <path class="ln arrow" pathLength="1" d="M224 460 L209.6 453 M224 460 L209.6 467"/>
+        <text class="lbl" x="478" y="330" text-anchor="start">Волга</text>
+        <circle class="dot" cx="330" cy="330" r="3.5"/>
+      </svg>
+    </div>
+    <div class="station__inner">
+      <div class="station__text">
+        <div class="station__meta reveal"><span class="date">17 июля 1942</span><span class="coord">48.71° N · 44.51° E</span></div>
+        <h2 class="city reveal"><small>станция 03</small>Сталинград</h2>
+        <p class="lead reveal">Битва за Сталинград — 200 дней и ночей. Бои шли за цеха, этажи и отдельные квартиры. Волга оставалась единственной нитью, по которой в город шло снабжение.</p>
+        <div class="note reveal" data-img="img/s3.jpg">
+          <span class="note__label">полевая запись</span>
+          <p>Дом Павлова держали 58 дней. В подвале жили люди, наверху держали оборону — дом так и не взяли.</p>
+          <span class="note__open">открыть запись <i>↗</i></span>
+        </div>
+        <div class="fact reveal">
+          <span class="fact__num">200</span>
+          <span class="fact__text">дней и ночей — столько длилась битва</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 04 · КУРСК (поворот) ================= -->
+  <section class="screen station station--turn" id="s4" data-day="744" data-year="1943" data-name="Курск" data-date="5 июля 1943" data-turn="1">
+    <div class="station__ghost" aria-hidden="true">744</div>
+    <div class="station__no">04 / 08</div>
+    <div class="scene" aria-hidden="true">
+      <svg class="scene__svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
+        <path class="fill" d="M600 120 L470 120 C150 120, 150 500, 470 500 L600 500 Z"/>
+        <path class="ln" pathLength="1" d="M600 120 L470 120 C150 120, 150 500, 470 500 L600 500"/>
+        <path class="ln ln--soft" pathLength="1" d="M600 160 L470 160 C210 160, 210 460, 470 460 L600 460"/>
+        <path class="ln ln--soft" pathLength="1" d="M600 200 L470 200 C270 200, 270 420, 470 420 L600 420"/>
+        <path class="ln arrow" pathLength="1" d="M280 70 L520 112"/>
+        <path class="ln arrow" pathLength="1" d="M520 112 L507 102.6 M520 112 L504.6 116.4"/>
+        <path class="ln arrow" pathLength="1" d="M280 550 L520 508"/>
+        <path class="ln arrow" pathLength="1" d="M520 508 L504.6 503.6 M520 508 L507 517.4"/>
+        <circle class="ln" pathLength="1" cx="520" cy="310" r="12"/>
+        <text class="lbl" x="520" y="352" text-anchor="middle">Курск</text>
+        <circle class="dot" cx="520" cy="310" r="3.5"/>
+      </svg>
+    </div>
+    <div class="station__inner">
+      <div class="station__text">
+        <div class="station__meta reveal"><span class="date">5 июля 1943</span><span class="coord">51.73° N · 36.19° E</span></div>
+        <h2 class="city reveal"><small>станция 04</small>Курск</h2>
+        <p class="lead reveal">Здесь ждали удара и готовились к нему: восемь оборонительных рубежей, сотни километров траншей. Наступление «Цитадель» захлебнулось за неделю.</p>
+        <div class="note reveal" data-img="img/s4.jpg">
+          <span class="note__label">полевая запись</span>
+          <p>12 июля под Прохоровкой сошлись сотни танков. 5 августа Москва дала первый за войну салют — в честь освобождения Орла и Белгорода.</p>
+          <span class="note__open">открыть запись <i>↗</i></span>
+        </div>
+        <div class="fact reveal">
+          <span class="fact__num">поворот</span>
+          <span class="fact__text">после Курска дорога идёт только на запад</span>
+        </div>
+        <div class="turn-mark"><s></s>здесь дорога поворачивает</div>
+      </div>
+    </div>
+  </section>
+  <!-- ================= 05 · МИНСК ================= -->
+  <section class="screen station" id="s5" data-day="1098" data-year="1944" data-name="Минск" data-date="23 июня 1944">
+    <div class="station__ghost" aria-hidden="true">1098</div>
+    <div class="station__no">05 / 08</div>
+    <div class="scene" aria-hidden="true">
+      <svg class="scene__svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
+        <ellipse class="fill" cx="370" cy="310" rx="160" ry="85"/>
+        <ellipse class="ln ln--soft" pathLength="1" cx="370" cy="310" rx="160" ry="85"/>
+        <path class="ln ln--soft" pathLength="1" d="M186 310 L600 310"/>
+        <circle class="ln" pathLength="1" cx="150" cy="310" r="16"/>
+        <path class="ln arrow" pathLength="1" d="M570 150 C470 150, 330 175, 166 297"/>
+        <path class="ln arrow" pathLength="1" d="M166 297 L181.7 294 M166 297 L173.4 282.8"/>
+        <path class="ln arrow" pathLength="1" d="M570 470 C470 470, 330 445, 166 323"/>
+        <path class="ln arrow" pathLength="1" d="M166 323 L173.4 337.2 M166 323 L181.7 326"/>
+        <circle class="dot" cx="310" cy="280" r="3"/>
+        <circle class="dot" cx="360" cy="335" r="3"/>
+        <circle class="dot" cx="420" cy="285" r="3"/>
+        <circle class="dot" cx="450" cy="335" r="3"/>
+        <circle class="dot" cx="380" cy="290" r="3"/>
+        <text class="lbl" x="150" y="362" text-anchor="middle">Минск</text>
+        <text class="lbl" x="370" y="372" text-anchor="middle">Котёл</text>
+        <circle class="dot" cx="150" cy="310" r="3.5"/>
+      </svg>
+    </div>
+    <div class="station__inner">
+      <div class="station__text">
+        <div class="station__meta reveal"><span class="date">23 июня 1944</span><span class="coord">53.90° N · 27.56° E</span></div>
+        <h2 class="city reveal"><small>станция 05</small>Минск</h2>
+        <p class="lead reveal">Операция «Багратион» началась 23 июня. Группа армий «Центр» перестала существовать за две недели; 3 июля был освобождён Минск.</p>
+        <div class="note reveal" data-img="img/s5.jpg">
+          <span class="note__label">полевая запись</span>
+          <p>За два месяца фронт ушёл на запад на 550–600 километров — дальше, чем за весь предыдущий год.</p>
+          <span class="note__open">открыть запись <i>↗</i></span>
+        </div>
+        <div class="fact reveal">
+          <span class="fact__num">550</span>
+          <span class="fact__text">километров на запад за два месяца</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 06 · ВАРШАВА ================= -->
+  <section class="screen station" id="s6" data-day="1306" data-year="1945" data-name="Варшава" data-date="17 января 1945">
+    <div class="station__ghost" aria-hidden="true">1306</div>
+    <div class="station__no">06 / 08</div>
+    <div class="scene" aria-hidden="true">
+      <svg class="scene__svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
+        <circle class="fill" cx="330" cy="350" r="70"/>
+        <path class="ln" pathLength="1" d="M330 90 C370 220, 270 290, 320 390 C360 470, 310 550, 335 620"/>
+        <path class="ln ln--soft" pathLength="1" d="M356 90 C396 220, 296 290, 346 390 C386 470, 336 550, 361 620"/>
+        <circle class="ln" pathLength="1" cx="330" cy="350" r="70"/>
+        <path class="ln arrow" pathLength="1" d="M570 130 C440 120, 280 150, 130 250"/>
+        <path class="ln arrow" pathLength="1" d="M130 250 L145.9 247.9 M130 250 L138.1 236.2"/>
+        <path class="ln arrow" pathLength="1" d="M570 570 C440 580, 280 550, 130 450"/>
+        <path class="ln arrow" pathLength="1" d="M130 450 L138.1 463.8 M130 450 L145.9 452.1"/>
+        <text class="lbl" x="405" y="128" text-anchor="start">Висла</text>
+        <text class="lbl" x="240" y="452" text-anchor="middle">Варшава</text>
+        <circle class="dot" cx="330" cy="350" r="3.5"/>
+      </svg>
+    </div>
+    <div class="station__inner">
+      <div class="station__text">
+        <div class="station__meta reveal"><span class="date">17 января 1945</span><span class="coord">52.23° N · 21.01° E</span></div>
+        <h2 class="city reveal"><small>станция 06</small>Варшава</h2>
+        <p class="lead reveal">Висла-Одерская операция: за три недели армия прошла от Вислы до Одера. До Берлина оставалось меньше семидесяти километров. Варшава была освобождена 17 января.</p>
+        <div class="note reveal" data-img="img/s6.jpg">
+          <span class="note__label">полевая запись</span>
+          <p>Город встречал в руинах: центр был разрушен почти полностью, а жители угнаны или разбросаны по стране.</p>
+          <span class="note__open">открыть запись <i>↗</i></span>
+        </div>
+        <div class="fact reveal">
+          <span class="fact__num">70</span>
+          <span class="fact__text">километров оставалось до Берлина</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 07 · БЕРЛИН ================= -->
+  <section class="screen station" id="s7" data-day="1395" data-year="1945" data-name="Берлин" data-date="16 апреля 1945">
+    <div class="station__ghost" aria-hidden="true">1395</div>
+    <div class="station__no">07 / 08</div>
+    <div class="scene" aria-hidden="true">
+      <svg class="scene__svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
+        <circle class="fill" cx="300" cy="330" r="190"/>
+        <circle class="ln" pathLength="1" cx="300" cy="330" r="190"/>
+        <circle class="ln ln--soft" pathLength="1" cx="300" cy="330" r="110"/>
+        <circle class="ln" pathLength="1" cx="300" cy="330" r="38"/>
+        <path class="ln ln--soft" pathLength="1" d="M100 300 C200 280, 250 365, 330 330 C400 300, 450 365, 520 340"/>
+        <path class="ln arrow" pathLength="1" d="M590 330 L346 330"/>
+        <path class="ln arrow" pathLength="1" d="M346 330 L360.4 337 M346 330 L360.4 323"/>
+        <path class="ln arrow" pathLength="1" d="M540 160 C440 50, 200 50, 110 190"/>
+        <path class="ln arrow" pathLength="1" d="M110 190 L123.7 181.7 M110 190 L111.9 174.1"/>
+        <path class="ln arrow" pathLength="1" d="M540 500 C440 610, 200 610, 110 470"/>
+        <path class="ln arrow" pathLength="1" d="M110 470 L111.9 485.9 M110 470 L123.7 478.3"/>
+        <circle class="red" cx="300" cy="330" r="6"/>
+        <text class="lbl" x="300" y="396" text-anchor="middle">Рейхстаг</text>
+      </svg>
+    </div>
+    <div class="station__inner">
+      <div class="station__text">
+        <div class="station__meta reveal"><span class="date">16 апреля 1945</span><span class="coord">52.52° N · 13.40° E</span></div>
+        <h2 class="city reveal"><small>станция 07</small>Берлин</h2>
+        <p class="lead reveal">Берлинская операция началась 16 апреля. Бои шли за каждый дом и каждый перекрёсток; на Зееловских высотах продвижение считали метрами.</p>
+        <div class="note reveal" data-img="img/s7.jpg">
+          <span class="note__label">полевая запись</span>
+          <p>В ночь на 1 мая над Рейхстагом установили Знамя Победы. 2 мая гарнизон города капитулировал.</p>
+          <span class="note__open">открыть запись <i>↗</i></span>
+        </div>
+        <div class="fact reveal">
+          <span class="fact__num">17</span>
+          <span class="fact__text">дней — от первого залпа до капитуляции гарнизона</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 08 · ПОБЕДА ================= -->
+  <section class="screen station" id="s8" data-day="1418" data-year="1945" data-name="Победа" data-date="9 мая 1945">
+    <div class="station__ghost" aria-hidden="true">1418</div>
+    <div class="station__no">08 / 08</div>
+    <div class="scene" aria-hidden="true">
+      <svg class="scene__svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
+        <path class="ln" pathLength="1" d="M203.5 303.5 L398.9 120 L495.5 472 L379.1 321 L258.2 212.5 L166.5 296 L60 281.5"/>
+        <path class="ln arrow" pathLength="1" d="M60 281.5 L73.3 290.4 M60 281.5 L75.2 276.5"/>
+        <circle class="ln" pathLength="1" cx="60" cy="281.5" r="9"/>
+        <circle class="dot" cx="203.5" cy="303.5" r="4"/>
+        <text class="lbl" x="213.5" y="293.5" text-anchor="start">01</text>
+        <circle class="dot" cx="398.9" cy="120" r="4"/>
+        <text class="lbl" x="408.9" y="110" text-anchor="start">02</text>
+        <circle class="dot" cx="495.5" cy="472" r="4"/>
+        <text class="lbl" x="505.5" y="462" text-anchor="start">03</text>
+        <circle class="dot" cx="379.1" cy="321" r="4"/>
+        <text class="lbl" x="389.1" y="311" text-anchor="start">04</text>
+        <circle class="dot" cx="258.2" cy="212.5" r="4"/>
+        <text class="lbl" x="268.2" y="202.5" text-anchor="start">05</text>
+        <circle class="dot" cx="166.5" cy="296" r="4"/>
+        <text class="lbl" x="176.5" y="286" text-anchor="start">06</text>
+        <circle class="dot" cx="60" cy="281.5" r="4"/>
+        <text class="lbl" x="70" y="271.5" text-anchor="start">07</text>
+        <circle class="red" cx="60" cy="281.5" r="5"/>
+      </svg>
+    </div>
+    <div class="station__inner">
+      <div class="station__text">
+        <div class="station__meta reveal"><span class="date">9 мая 1945</span><span class="coord">52.52° N · 13.40° E</span></div>
+        <h2 class="city reveal"><small>станция 08</small>Победа</h2>
+        <p class="lead reveal">Акт о капитуляции подписали в Карлсхорсте 8 мая в 22:43 по среднеевропейскому времени. В Москве было уже 00:43 девятого — поэтому День Победы мы празднуем 9 мая.</p>
+        <div class="note reveal" data-img="img/s8.jpg">
+          <span class="note__label">полевая запись</span>
+          <p>В тот вечер над Москвой дали тридцать залпов. 24 июня на Красной площади прошёл Парад Победы.</p>
+          <span class="note__open">открыть запись <i>↗</i></span>
+        </div>
+        <div class="fact reveal">
+          <span class="fact__num">1418</span>
+          <span class="fact__text">дней и ночей — и около 27 миллионов жизней</span>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ================= ФИНАЛ ================= -->
+  <section class="screen finale" id="finale">
+    <div class="finale__head">
+      <span class="date">9 мая 1945</span>
+      <h2 class="finale__title">Дорога<br>пройдена</h2>
+      <p class="finale__sub">Брест — Берлин: 1418 дней, восемь станций.</p>
+    </div>
+
+    <!-- ============ ПИСЬМО ============
+         Замените абзацы ниже своим текстом.
+         Подпись — в блоке .letter__sign.
+    -->
+    <article class="letter" id="letter">
+      <div class="letter__body" id="letterBody">
+        <p>Дедушка, эти 1418 дней ты знаешь лучше меня. Я сделал эту дорогу не для того, чтобы что-то тебе рассказать, а чтобы хоть немного пройти её рядом.</p>
+        <p>Спасибо, что хранишь имена, которые иначе бы исчезли. Это и есть самая долгая память.</p>
+      </div>
+      <div class="letter__sign" id="letterSign">— твой внук</div>
+      <span class="letter__seal" aria-hidden="true"></span>
+    </article>
+
+    <!-- ============ МАРШРУТНЫЙ ЛИСТ ============ -->
+    <div class="cert" id="cert">
+      <div class="cert__frame">
+        <div class="cert__top">маршрутный лист</div>
+        <h3>ДОРОГА</h3>
+        <div class="cert__sub">Брест — Берлин · 22.06.1941 — 09.05.1945</div>
+        <div class="cert__rows">
+          <div class="cert__row"><span>Пройдено</span><b>1418 дней · 8 станций</b></div>
+          <div class="cert__row"><span>Дата</span><b id="certDate">—</b></div>
+        </div>
+        <p class="cert__phrase">Любую станцию можно открыть снова: записи остаются на своих местах.</p>
+        <div class="cert__stamp">ПАМЯТЬ<em>1418</em></div>
+      </div>
+    </div>
+
+    <div class="finale__actions">
+      <button class="btn btn--ghost" id="againBtn" type="button">Пройти снова</button>
+    </div>
+
+    <div class="foot">
+      <span id="footName">Хранителю памяти</span>
+      <span>1418 дней · 1941—1945</span>
+    </div>
+  </section>
+</main>
+
+<noscript><p style="padding:90px 22px;font-family:Georgia,serif">Для этой страницы нужен JavaScript: он ведёт счёт дней пути и раскрывает станции.</p></noscript>
+<script>
+(function () {
+  "use strict";
+
+  /* ============================================================
+     ЧТО ПОДСТАВИТЬ СВОЁ
+     ============================================================ */
+  const CONFIG = {
+    keeperName: "Имя Отчество",   // на маршрутном листе и в билете
+    signature: "— твой внук",     // подпись под письмом
+    certDate: ""                  // пусто = сегодняшняя дата
+  };
+
+  const $  = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+  const stations  = $$(".station");
+  const dayNum    = $("#dayNum");
+  const yearEl    = $("#yearEl");
+  const railFill  = $("#railFill");
+  const railTicks = $("#railTicks");
+  /* ---------- имя и подписи ---------- */
+  const NAME = CONFIG.keeperName.trim() || "Имя Отчество";
+  const keeperEl = $("#keeperName");
+  if (keeperEl) keeperEl.textContent = NAME;
+  const certNameEl = $("#certName");
+  if (certNameEl) certNameEl.textContent = NAME;
+  const footEl = $("#footName");
+  if (footEl) footEl.textContent = NAME === "Имя Отчество" ? "Хранителю памяти" : NAME;
+  const signEl = $("#letterSign");
+  if (signEl) signEl.textContent = CONFIG.signature;
+
+  if (CONFIG.certDate) {
+    $("#certDate").textContent = CONFIG.certDate;
+  } else {
+    const d = new Date();
+    const m = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+    $("#certDate").textContent = d.getDate() + " " + m[d.getMonth()] + " " + d.getFullYear();
+  }
+
+  /* номер дня — как штамп в картотеке: 0001, 0391, 1418 */
+  $$(".station__ghost").forEach(function (el) {
+    el.textContent = el.textContent.trim().padStart(4, "0");
+  });
+
+  /* ---------- насечки маршрута ---------- */
+  const ticks = stations.map(function () {
+    const s = document.createElement("span");
+    railTicks.appendChild(s);
+    return s;
+  });
+
+  /* ---------- измерение секций ---------- */
+  const offsets = [];
+  function measure() {
+    offsets.length = 0;
+    stations.forEach(function (s) {
+      offsets.push(Math.round(s.getBoundingClientRect().top + window.scrollY));
+    });
+  }
+
+  /* ---------- состояние ---------- */
+  const state = { active: -2 };
+
+  function setActive(idx) {
+    if (idx === state.active) return;
+    const prev = state.active;
+    state.active = idx;
+
+    if (idx >= 0) {
+      stations[idx].classList.add("is-active");
+      document.body.classList.add("is-turned");
+      if (idx < 3) document.body.classList.remove("is-turned");
+    } else {
+      document.body.classList.remove("is-turned");
+    }
+
+    ticks.forEach(function (t, i) { t.classList.toggle("on", idx >= 0 && i <= idx); });
+
+    if (idx >= 0) {
+      try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {}
+    }
+  }
+
+  function update() {
+    if (!offsets.length) return;
+
+    const vh = window.innerHeight;
+    const center = window.scrollY + vh * 0.5;
+    const first = offsets[0];
+    const last = offsets[offsets.length - 1];
+    let idx = -1;
+
+    if (center >= first) {
+      idx = stations.length - 1;
+      for (let i = 0; i < stations.length; i++) {
+        if (center < offsets[i] + stations[i].offsetHeight) { idx = i; break; }
+      }
+    }
+
+    const progress = clamp((center - first) / Math.max(1, last - first), 0, 1);
+
+    railFill.style.transform = "scaleX(" + progress.toFixed(4) + ")";
+    yearEl.textContent = idx >= 0 ? stations[idx].dataset.year : "1941";
+    setActive(idx);
+    countTo(idx >= 0 ? +stations[idx].dataset.day : 1);
+  }
+
+  /* счётчик дней: плавный пересчёт к значению станции */
+  const dayState = { shown: 1, target: 1, raf: 0 };
+
+  function countTo(target) {
+    if (target === dayState.target) return;
+    dayState.target = target;
+    if (dayState.raf) return;
+    const step = function () {
+      const diff = dayState.target - dayState.shown;
+      if (Math.abs(diff) < 0.6) {
+        dayState.shown = dayState.target;
+        dayNum.textContent = dayState.target;
+        dayState.raf = 0;
+        return;
+      }
+      dayState.shown += diff * 0.16;
+      dayNum.textContent = Math.round(dayState.shown);
+      dayState.raf = requestAnimationFrame(step);
+    };
+    dayState.raf = requestAnimationFrame(step);
+  }
+
+  let queued = false;
+  function onScroll() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function () { queued = false; update(); });
+  }
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", function () { measure(); update(); });
+  window.addEventListener("load", function () { measure(); update(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { measure(); update(); });
+
+  /* ---------- кнопки ---------- */
+  $("#startBtn").addEventListener("click", function () {
+    stations[0].scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  $("#againBtn").addEventListener("click", function () {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  /* ---------- запуск ---------- */
+  measure();
+  update();
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+})();
+</script>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Полевая запись" aria-hidden="true">
+  <button class="lb__close" id="lbClose" type="button" aria-label="Закрыть">×</button>
+  <div class="lb__stage">
+    <img class="lb__img" id="lbImg" alt="">
+    <div class="lb__ph"><span>изображение записи</span><b id="lbPath"></b></div>
+  </div>
+  <div class="lb__cap" id="lbCap"></div>
+</div>
+<script>
+(function () {
+  var lb = document.getElementById("lb"), img = document.getElementById("lbImg"),
+      cap = document.getElementById("lbCap"), path = document.getElementById("lbPath"),
+      closeBtn = document.getElementById("lbClose"), last = null;
+  function open(note) {
+    var sec = note.closest(".station"), src = note.getAttribute("data-img");
+    last = note;
+    lb.classList.remove("is-empty");
+    img.onerror = function () { lb.classList.add("is-empty"); };
+    img.alt = "Полевая запись — " + (sec ? sec.dataset.name : "");
+    img.src = src;
+    path.textContent = src;
+    cap.textContent = sec ? sec.dataset.name + " · " + sec.dataset.date + " · полевая запись" : "полевая запись";
+    lb.classList.add("is-open"); lb.setAttribute("aria-hidden", "false");
+    document.documentElement.classList.add("lb-open");
+    closeBtn.focus();
+  }
+  function close() {
+    lb.classList.remove("is-open"); lb.setAttribute("aria-hidden", "true");
+    document.documentElement.classList.remove("lb-open");
+    if (last) last.focus({ preventScroll: true });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".note[data-img]"), function (n) {
+    n.setAttribute("role", "button"); n.tabIndex = 0;
+    n.addEventListener("click", function () { open(n); });
+    n.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(n); }
+    });
+  });
+  closeBtn.addEventListener("click", close);
+  lb.addEventListener("click", function (e) { if (e.target === lb || e.target.classList.contains("lb__stage")) close(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && lb.classList.contains("is-open")) close(); });
+})();
+</script>
+</body>
+</html>
