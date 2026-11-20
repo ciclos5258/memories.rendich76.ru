@@ -1,9 +1,22 @@
 /* ДОРОГА — офлайн-кэш. Работает только на http(s), локально просто не регистрируется. */
-const CACHE = "doroga-v3";
-const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
+
+/* Поднимайте номер, когда меняете любой кэшируемый файл, кроме index.html
+   (например, заменили картинку, но оставили то же имя). */
+const VERSION = "v4";
+const CACHE = "doroga-" + VERSION;
+
+/* Без этих файлов сайт не работает офлайн — если хоть один не скачался, установка отменяется. */
+const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
+
+/* Картинки записей. Кладём в кэш по возможности: если какой-то ещё нет в папке, это не ломает установку. */
+const IMAGES = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => "./img/s" + n + ".jpg");
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => c.addAll(CORE).then(() => Promise.allSettled(IMAGES.map((u) => c.add(u)))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", (e) => {
@@ -31,7 +44,7 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  /* всё остальное — из кэша, с догрузкой */
+  /* всё остальное — из кэша, с догрузкой (ошибки в кэш не кладём) */
   e.respondWith(
     caches.match(e.request).then((hit) => {
       if (hit) return hit;

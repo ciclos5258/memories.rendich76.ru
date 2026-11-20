@@ -1,0 +1,21 @@
+{
+  "name": "ДОРОГА — 1418 дней",
+  "short_name": "ДОРОГА",
+  "description": "Восемь станций от Бреста до Берлина. 1418 дней.",
+  "lang": "ru",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e6dfcd",
+  "theme_color": "#e6dfcd",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
